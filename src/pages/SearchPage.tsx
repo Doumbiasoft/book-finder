@@ -1,17 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import type { BookVolume, SearchResponse } from "../types/types";
 import UnitOfWork from "../api/unit-of-work";
 
 const SearchPage: React.FC = () => {
-  const [query, setQuery] = React.useState<string>("");
-  const [books, setBooks] = React.useState<BookVolume[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string>("");
-  const [popularBooks, setPopularBooks] = React.useState<BookVolume[]>([]);
-  const [popularLoading, setPopularLoading] = React.useState<boolean>(false);
-  const [searchTimeoutId, setSearchTimeoutId] = React.useState<number | null>(
-    null
-  );
+  const [query, setQuery] = useState<string>("");
+  const [books, setBooks] = useState<BookVolume[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [popularBooks, setPopularBooks] = useState<BookVolume[]>([]);
+  const [popularLoading, setPopularLoading] = useState<boolean>(false);
+  const [searchTimeoutId, setSearchTimeoutId] = useState<number | null>(null);
 
   const fetchPopularBooks = async () => {
     setPopularLoading(true);
@@ -45,6 +43,37 @@ const SearchPage: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+  const handleSearch = () => {
+    searchBooks(query);
+  };
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery);
+
+    if (searchTimeoutId) {
+      clearTimeout(searchTimeoutId);
+    }
+
+    if (!newQuery.trim()) {
+      setBooks([]);
+      setError("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      searchBooks(newQuery);
+    }, 500);
+
+    setSearchTimeoutId(timeoutId);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (searchTimeoutId) {
+        clearTimeout(searchTimeoutId);
+      }
+      handleSearch();
     }
   };
   return <div>SearchPage</div>;
