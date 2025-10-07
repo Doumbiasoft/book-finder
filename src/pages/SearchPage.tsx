@@ -48,9 +48,7 @@ const SearchPage: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleSearch = () => {
-    searchBooks(query);
-  };
+
   const handleQueryChange = (newQuery: string) => {
     setQuery(newQuery);
 
@@ -69,15 +67,6 @@ const SearchPage: React.FC = () => {
     }, 500);
 
     setSearchTimeoutId(timeoutId);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      if (searchTimeoutId) {
-        clearTimeout(searchTimeoutId);
-      }
-      handleSearch();
-    }
   };
 
   useEffect(() => {
@@ -109,7 +98,6 @@ const SearchPage: React.FC = () => {
               type="text"
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
-              onKeyPress={handleKeyPress}
               placeholder="Search by title, author, or ISBN..."
               className="w-full pl-10 pr-4 py-3 rounded-full border border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
