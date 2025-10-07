@@ -54,7 +54,7 @@ const DetailPage: React.FC = () => {
         {detailLoading && (
           <div className="flex justify-center items-center py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
               <p className="text-gray-400">Loading book details...</p>
             </div>
           </div>
