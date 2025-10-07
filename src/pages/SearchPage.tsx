@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { BookVolume, SearchResponse } from "../types/types";
-import UnitOfWork from "../api/unit-of-work";
+import unitOfWork from "../api/unit-of-work";
 import { Book, Search } from "lucide-react";
 import BookGrid from "../components/BookGrid";
 
@@ -17,7 +17,7 @@ const SearchPage: React.FC = () => {
   const fetchSoftwareBooks = async () => {
     setSoftwareBookLoading(true);
     try {
-      const response: SearchResponse = await UnitOfWork.book.getSoftwareBooks();
+      const response: SearchResponse = await unitOfWork.book.getSoftwareBooks();
       setSoftwareBooks(response.items || []);
     } catch (err) {
       console.error("❌ Error fetching popular books:", err);
@@ -32,7 +32,7 @@ const SearchPage: React.FC = () => {
     setError("");
 
     try {
-      const response: SearchResponse = await UnitOfWork.book.searchBooks(
+      const response: SearchResponse = await unitOfWork.book.searchBooks(
         searchQuery
       );
 
