@@ -82,7 +82,7 @@ const SearchPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-3 mb-4">
-          <Book className="w-10 h-10 text-yellow-400" />
+          <Book className="w-10 h-10 text-yellow-500" />
           <h1 className="text-4xl font-bold text-gray-100">Book Finder</h1>
         </div>
         <p className="text-gray-400">
