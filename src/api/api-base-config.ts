@@ -14,6 +14,8 @@ declare module "axios" {
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://www.googleapis.com/books/v1";
 
+const APP_MODE = import.meta.env.VITE_MODE || "development";
+
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 1000,
@@ -32,11 +34,12 @@ axiosInstance.interceptors.request.use(
     console.log(
       `⏳ API Request is starting at ${startTime}. (based on local time)`
     );
-    console.log(
-      `⏳ Method : ${req.method?.toUpperCase()} Request: ${
-        req.baseURL + "/" + req.url
-      }. (based on local time)`
-    );
+    if (APP_MODE === "development")
+      console.log(
+        `⏳ Method : ${req.method?.toUpperCase()} Request: ${
+          req.baseURL + "/" + req.url
+        }. (based on local time)`
+      );
     return req;
   },
   (error) => {
