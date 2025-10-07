@@ -1,9 +1,9 @@
 import Api from "../api-base-config";
 
 class BookEndpoints {
-  static async getPopularBooks(): Promise<any> {
+  static async getSoftwareBooks(): Promise<any> {
     return await Api.get<any>(
-      `volumes?q=subject:bestseller&orderBy=relevance&maxResults=8`
+      `volumes?q=software+development+subject:COMPUTERS&orderBy=newest&maxResults=6`
     );
   }
   static async searchBooks(searchQuery: string): Promise<any> {

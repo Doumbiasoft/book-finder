@@ -10,14 +10,14 @@ const BookGrid: React.FC<{ books: BookVolume[] }> = ({ books }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
       {books.map((book) => (
         <div
           key={book.id}
           onClick={() => handleBookClick(book.id)}
-          className="bg-gray-800 rounded-lg shadow-lg hover:shadow-2xl transition-all cursor-pointer overflow-hidden transform hover:-translate-y-1 border border-gray-700"
+          className=" rounded-lg shadow-lg hover:shadow-2xl transition-all cursor-pointer overflow-hidden transform hover:-translate-y-1 border border-gray-700"
         >
-          <div className="h-48 bg-gray-900 flex items-center justify-center overflow-hidden">
+          <div className="h-64 bg-gray-900 flex items-center justify-center overflow-hidden">
             {book.volumeInfo.imageLinks?.thumbnail ? (
               <img
                 src={book.volumeInfo.imageLinks.thumbnail}
@@ -28,7 +28,7 @@ const BookGrid: React.FC<{ books: BookVolume[] }> = ({ books }) => {
               <Book className="w-16 h-16 text-gray-600" />
             )}
           </div>
-          <div className="p-4">
+          <div className="p-4 border-t border-gray-700">
             <h3 className="font-semibold text-gray-100 mb-2 line-clamp-2 min-h-[3rem]">
               {book.volumeInfo.title}
             </h3>
@@ -36,7 +36,7 @@ const BookGrid: React.FC<{ books: BookVolume[] }> = ({ books }) => {
               {book.volumeInfo.authors?.join(", ") || "Unknown Author"}
             </p>
             {book.volumeInfo.publishedDate && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-yellow-500 mt-1">
                 {new Date(book.volumeInfo.publishedDate).getFullYear()}
               </p>
             )}
