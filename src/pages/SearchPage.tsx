@@ -24,7 +24,29 @@ const SearchPage: React.FC = () => {
       setPopularLoading(false);
     }
   };
+  const searchBooks = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
 
+    setLoading(true);
+    setError("");
+
+    try {
+      const response: SearchResponse = await UnitOfWork.book.searchBooks(
+        searchQuery
+      );
+
+      setBooks(response.items || []);
+
+      if (!response.items || response.items.length === 0) {
+        setError("📚 No books found. Try a different search term.");
+      }
+    } catch (err) {
+      setError("❌ Error searching for books. Please try again.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   return <div>SearchPage</div>;
 };
 
