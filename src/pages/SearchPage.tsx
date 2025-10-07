@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { BookVolume, SearchResponse } from "../types/types";
 import UnitOfWork from "../api/unit-of-work";
 
@@ -76,6 +76,16 @@ const SearchPage: React.FC = () => {
       handleSearch();
     }
   };
+
+  useEffect(() => {
+    fetchPopularBooks();
+
+    return () => {
+      if (searchTimeoutId) {
+        clearTimeout(searchTimeoutId);
+      }
+    };
+  }, []);
   return <div>SearchPage</div>;
 };
 
