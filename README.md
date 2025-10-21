@@ -2,11 +2,11 @@
 
 A modern, responsive web application for searching and discovering books using the Google Books API. Built with React, TypeScript, and Tailwind CSS.
 
-## 🌐 Live at: <a href="https://world-books.netlify.app/" title="Try Demo" target="_blank">Try Now</a>
+## 🌐 Live at: <a href="https://book-finder.doumbiasoft.com" title="Try Now" target="_blank">Try Now</a>
 
 ## Screenshots
 
-[![Try Demo](./src//assets/images/book-finder.png)](https://world-books.netlify.app/)
+[![Try Now](./src//assets/images/book-finder.png)](https://book-finder.doumbiasoft.com)
 
 ## ✨ Features
 
