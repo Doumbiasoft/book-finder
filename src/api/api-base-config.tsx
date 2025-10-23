@@ -118,45 +118,50 @@ class Api {
     endpoint: string,
     params: Record<string, any> = {},
     headers: Record<string, string> = {},
-    timeout: number = 5000
+    retries: number = 1,
+    timeout: number = 10000
   ): Promise<T> {
-    return Api.request<T>(endpoint, params, "get", headers, timeout);
+    return Api.request<T>(endpoint, params, "get", headers, retries, timeout);
   }
 
   static post<T>(
     endpoint: string,
     data: Record<string, any> = {},
     headers: Record<string, string> = {},
-    timeout: number = 5000
+    retries: number = 1,
+    timeout: number = 10000
   ): Promise<T> {
-    return Api.request<T>(endpoint, data, "post", headers, timeout);
+    return Api.request<T>(endpoint, data, "post", headers, retries, timeout);
   }
 
   static put<T>(
     endpoint: string,
     data: Record<string, any> = {},
     headers: Record<string, string> = {},
-    timeout: number = 5000
+    retries: number = 1,
+    timeout: number = 10000
   ): Promise<T> {
-    return Api.request<T>(endpoint, data, "put", headers, timeout);
+    return Api.request<T>(endpoint, data, "put", headers, retries, timeout);
   }
 
   static patch<T>(
     endpoint: string,
     data: Record<string, any> = {},
     headers: Record<string, string> = {},
-    timeout: number = 5000
+    retries: number = 1,
+    timeout: number = 10000
   ): Promise<T> {
-    return Api.request<T>(endpoint, data, "patch", headers, timeout);
+    return Api.request<T>(endpoint, data, "patch", headers, retries, timeout);
   }
 
   static delete<T>(
     endpoint: string,
     data: Record<string, any> = {},
     headers: Record<string, string> = {},
-    timeout: number = 5000
+    retries: number = 1,
+    timeout: number = 10000
   ): Promise<T> {
-    return Api.request<T>(endpoint, data, "delete", headers, timeout);
+    return Api.request<T>(endpoint, data, "delete", headers, retries, timeout);
   }
 }
 
