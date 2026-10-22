@@ -26,6 +26,10 @@ const CACHE_PREFIX = "api-cache:";
 const memoryCache = new Map<string, { expiresAt: number; data: unknown }>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
 
+// Retry policy for transient failures (5xx or network errors)
+const TRANSIENT_MAX_ATTEMPTS = 4;
+const TRANSIENT_RETRY_DELAY_MS = 500;
+
 const readCache = <T,>(key: string): T | undefined => {
   let entry = memoryCache.get(key);
   if (!entry) {
@@ -129,8 +133,15 @@ class Api {
 
     const send = async (): Promise<T> => {
       let responseError: any = null;
+      // Google Books often answers 503 for a moment; GETs get a few
+      // extra attempts with backoff even when `retries` is 1.
+      const maxAttempts = Math.max(
+        1,
+        retries,
+        method === "get" ? TRANSIENT_MAX_ATTEMPTS : 1
+      );
 
-      for (let attempt = 0; attempt < Math.max(1, retries); attempt++) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           const response: AxiosResponse<T> = await axiosInstance({
             url: endpoint,
@@ -145,7 +156,19 @@ class Api {
         } catch (error: any) {
           responseError = error;
           // Retrying a rate-limited request only burns more quota
-          if (error?.response?.status === 429) break;
+          const status = error?.response?.status;
+          if (status === 429) break;
+
+          const isTransient = !status || status >= 500;
+          const hasRetriesLeft =
+            attempt < Math.max(1, retries) - 1 ||
+            (isTransient && attempt < maxAttempts - 1);
+          if (!hasRetriesLeft) break;
+          if (isTransient) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS * 2 ** attempt)
+            );
+          }
         }
       }
       const message =
