@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { BookVolume, SearchResponse } from "../types/types";
 import unitOfWork from "../api/unit-of-work";
 import { Book, Search } from "lucide-react";
@@ -20,6 +20,8 @@ const getServiceErrorMessage = (err: unknown): string | null =>
     ? SERVICE_UNAVAILABLE_MESSAGE
     : null;
 
+const SEARCH_DEBOUNCE_MS = 500;
+
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [books, setBooks] = useState<BookVolume[]>([]);
@@ -28,7 +30,10 @@ const SearchPage: React.FC = () => {
   const [softwareBooks, setSoftwareBooks] = useState<BookVolume[]>([]);
   const [softwareBookLoading, setSoftwareBookLoading] =
     useState<boolean>(false);
-  const [searchTimeoutId, setSearchTimeoutId] = useState<number | null>(null);
+  const searchTimeoutRef = useRef<number | null>(null);
+  // Incremented on every keystroke so responses from outdated searches
+  // (which can still be retrying) never overwrite the latest one.
+  const latestSearchIdRef = useRef<number>(0);
 
   const fetchSoftwareBooks = async () => {
     setSoftwareBookLoading(true);
@@ -43,8 +48,10 @@ const SearchPage: React.FC = () => {
       setSoftwareBookLoading(false);
     }
   };
-  const searchBooks = async (searchQuery: string) => {
+  const searchBooks = async (searchQuery: string, searchId: number) => {
     if (!searchQuery.trim()) return;
+
+    const isStale = () => searchId !== latestSearchIdRef.current;
 
     setLoading(true);
     setError("");
@@ -53,6 +60,7 @@ const SearchPage: React.FC = () => {
       const response: SearchResponse = await unitOfWork.book.searchBooks(
         searchQuery
       );
+      if (isStale()) return;
 
       setBooks(response.items || []);
 
@@ -60,42 +68,46 @@ const SearchPage: React.FC = () => {
         setError("📚 No books found. Try a different search term.");
       }
     } catch (err) {
+      if (isStale()) return;
+      setBooks([]);
       setError(
         getServiceErrorMessage(err) ??
           "❌ Error searching for books. Please try again."
       );
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   };
 
   const handleQueryChange = (newQuery: string) => {
     setQuery(newQuery);
 
-    if (searchTimeoutId) {
-      clearTimeout(searchTimeoutId);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    // Invalidate any in-flight search and hide its outdated message
+    const searchId = ++latestSearchIdRef.current;
+    setError("");
 
     if (!newQuery.trim()) {
       setBooks([]);
-      setError("");
+      setLoading(false);
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      searchBooks(newQuery);
-    }, 500);
-
-    setSearchTimeoutId(timeoutId);
+    searchTimeoutRef.current = window.setTimeout(() => {
+      searchBooks(newQuery, searchId);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
   useEffect(() => {
     fetchSoftwareBooks();
 
     return () => {
-      if (searchTimeoutId) {
-        clearTimeout(searchTimeoutId);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
   }, []);
@@ -132,7 +144,14 @@ const SearchPage: React.FC = () => {
         </div>
       )}
 
-      {books.length > 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+            <p className="text-gray-400">Searching books...</p>
+          </div>
+        </div>
+      ) : books.length > 0 ? (
         <>
           <h2 className="text-2xl font-bold text-gray-100 mb-6">
             Search Results
