@@ -3,6 +3,10 @@ import type { BookVolume, SearchResponse } from "../types/types";
 import unitOfWork from "../api/unit-of-work";
 import { Book, Search } from "lucide-react";
 import BookGrid from "../components/BookGrid";
+import { isRateLimited } from "../api/api-base-config";
+
+const RATE_LIMIT_MESSAGE =
+  "⏳ The book service is busy right now. Please try again in a little while.";
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState<string>("");
@@ -21,6 +25,7 @@ const SearchPage: React.FC = () => {
       setSoftwareBooks(response.items || []);
     } catch (err) {
       console.error("❌ Error fetching popular books:", err);
+      if (isRateLimited(err)) setError(RATE_LIMIT_MESSAGE);
     } finally {
       setSoftwareBookLoading(false);
     }
@@ -42,7 +47,11 @@ const SearchPage: React.FC = () => {
         setError("📚 No books found. Try a different search term.");
       }
     } catch (err) {
-      setError("❌ Error searching for books. Please try again.");
+      setError(
+        isRateLimited(err)
+          ? RATE_LIMIT_MESSAGE
+          : "❌ Error searching for books. Please try again."
+      );
       console.error(err);
     } finally {
       setLoading(false);

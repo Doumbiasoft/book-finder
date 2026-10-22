@@ -115,12 +115,22 @@ cd book-finder
 npm install
 ```
 
-3. Create environment file (optional):
+3. Create environment file:
 
 ```bash
-# .env
+# .env.local
 VITE_API_BASE_URL=https://www.googleapis.com/books/v1
+VITE_GOOGLE_BOOKS_API_KEY=your-google-books-api-key
 ```
+
+`VITE_GOOGLE_BOOKS_API_KEY` is required in production. Requests without a key are billed to Google's shared anonymous quota, which is usually exhausted and returns `429 Too Many Requests`. To create a key:
+
+- In the [Google Cloud Console](https://console.cloud.google.com/), create or select a project and enable the **Books API**.
+- Go to **APIs & Services > Credentials > Create credentials > API key**.
+- Restrict the key: under **Application restrictions** choose **Websites** and add your domains (e.g. `https://book-finder.doumbiasoft.com/*`, `http://localhost:5173/*`); under **API restrictions** allow only the Books API.
+- Add the key to your hosting provider's build environment variables (e.g. Netlify) and redeploy. Vite inlines `VITE_*` variables at build time, so a rebuild is required.
+
+GET responses are cached for one hour (in memory and in `sessionStorage`) and identical in-flight requests are shared, so repeated searches and page visits do not spend extra quota. Rate-limited (429) requests are not retried.
 
 ### Development
 

@@ -16,6 +16,41 @@ const BASE_URL =
 
 const APP_MODE = import.meta.env.VITE_MODE || "development";
 
+// Without a key, Google Books bills every request to a shared anonymous
+// project whose daily quota is almost always exhausted (HTTP 429).
+const GOOGLE_BOOKS_API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+
+// GET responses are cached to keep the app well under the daily quota.
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_PREFIX = "api-cache:";
+const memoryCache = new Map<string, { expiresAt: number; data: unknown }>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
+const readCache = <T,>(key: string): T | undefined => {
+  let entry = memoryCache.get(key);
+  if (!entry) {
+    try {
+      const stored = sessionStorage.getItem(CACHE_PREFIX + key);
+      if (stored) entry = JSON.parse(stored);
+    } catch {
+      // sessionStorage can be unavailable (private mode, blocked storage)
+    }
+  }
+  if (!entry || entry.expiresAt < Date.now()) return undefined;
+  memoryCache.set(key, entry);
+  return entry.data as T;
+};
+
+const writeCache = (key: string, data: unknown) => {
+  const entry = { expiresAt: Date.now() + CACHE_TTL_MS, data };
+  memoryCache.set(key, entry);
+  try {
+    sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+  } catch {
+    // Quota exceeded or storage unavailable: the memory cache still works
+  }
+};
+
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 1000,
@@ -27,6 +62,9 @@ const axiosInstance = axios.create({
 // Add interceptors to API instance
 axiosInstance.interceptors.request.use(
   (req) => {
+    if (GOOGLE_BOOKS_API_KEY) {
+      req.params = { ...req.params, key: GOOGLE_BOOKS_API_KEY };
+    }
     req.metadata = {
       startTime: new Date().getTime(),
     };
@@ -88,29 +126,56 @@ class Api {
     };
     const params = method === "get" ? data : {};
     const requestData = method !== "get" ? data : undefined;
-    let responseError: any = null;
 
-    for (let attempt = 0; attempt < Math.max(1, retries); attempt++) {
-      try {
-        const response: AxiosResponse<T> = await axiosInstance({
-          url: endpoint,
-          method,
-          data: requestData,
-          params,
-          headers,
-          timeout,
-        });
+    const send = async (): Promise<T> => {
+      let responseError: any = null;
 
-        return response.data;
-      } catch (error: any) {
-        responseError = error;
+      for (let attempt = 0; attempt < Math.max(1, retries); attempt++) {
+        try {
+          const response: AxiosResponse<T> = await axiosInstance({
+            url: endpoint,
+            method,
+            data: requestData,
+            params,
+            headers,
+            timeout,
+          });
+
+          return response.data;
+        } catch (error: any) {
+          responseError = error;
+          // Retrying a rate-limited request only burns more quota
+          if (error?.response?.status === 429) break;
+        }
       }
-    }
-    const message =
-      responseError?.response?.data?.message ||
-      responseError?.message ||
-      "An unexpected error occurred.";
-    throw Array.isArray(message) ? message : [message];
+      const message =
+        responseError?.response?.status === 429
+          ? "RATE_LIMITED"
+          : responseError?.response?.data?.error?.message ||
+            responseError?.response?.data?.message ||
+            responseError?.message ||
+            "An unexpected error occurred.";
+      throw Array.isArray(message) ? message : [message];
+    };
+
+    if (method !== "get") return send();
+
+    // Serve repeated GETs from cache and share identical in-flight requests
+    const cacheKey = endpoint + JSON.stringify(params);
+    const cached = readCache<T>(cacheKey);
+    if (cached !== undefined) return cached;
+
+    const pending = inFlightRequests.get(cacheKey);
+    if (pending) return pending as Promise<T>;
+
+    const request = send()
+      .then((result) => {
+        writeCache(cacheKey, result);
+        return result;
+      })
+      .finally(() => inFlightRequests.delete(cacheKey));
+    inFlightRequests.set(cacheKey, request);
+    return request;
   }
 
   // HTTP Helper Methods
@@ -167,3 +232,6 @@ class Api {
 
 export default Api;
 export { axiosInstance };
+
+export const isRateLimited = (error: unknown): boolean =>
+  Array.isArray(error) && error[0] === "RATE_LIMITED";
