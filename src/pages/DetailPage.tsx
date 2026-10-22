@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { BookVolume } from "../types/types";
 import unitOfWork from "../api/unit-of-work";
-import { isRateLimited } from "../api/api-base-config";
+import {
+  isRateLimited,
+  isServiceUnavailable,
+} from "../api/api-base-config";
 import { ArrowLeft, Book, ExternalLink } from "lucide-react";
 
 const DetailPage: React.FC = () => {
@@ -23,6 +26,8 @@ const DetailPage: React.FC = () => {
       setError(
         isRateLimited(err)
           ? "⏳ The book service is busy right now. Please try again in a little while."
+          : isServiceUnavailable(err)
+          ? "⚠️ Google Books is temporarily unavailable. Please try again in a moment."
           : "❌ Error loading book details"
       );
     } finally {

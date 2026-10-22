@@ -130,7 +130,7 @@ VITE_GOOGLE_BOOKS_API_KEY=your-google-books-api-key
 - Restrict the key: under **Application restrictions** choose **Websites** and add your domains (e.g. `https://book-finder.doumbiasoft.com/*`, `http://localhost:5173/*`); under **API restrictions** allow only the Books API.
 - Add the key to your hosting provider's build environment variables (e.g. Netlify) and redeploy. Vite inlines `VITE_*` variables at build time, so a rebuild is required.
 
-GET responses are cached for one hour (in memory and in `sessionStorage`) and identical in-flight requests are shared, so repeated searches and page visits do not spend extra quota. Rate-limited (429) requests are not retried. Transient failures (5xx such as Google's frequent `503 Service temporarily unavailable`, or network errors) are retried up to 4 attempts with exponential backoff (500ms, 1s, 2s).
+GET responses are cached for one hour (in memory and in `sessionStorage`) and identical in-flight requests are shared, so repeated searches and page visits do not spend extra quota. Rate-limited (429) requests are not retried. Transient failures (5xx such as Google's frequent `503 Service temporarily unavailable`, or network errors) are retried up to 6 attempts with exponential backoff (400ms, 800ms, 1.6s, then 2s, capped). If they still fail, the UI shows "Google Books is temporarily unavailable" rather than a generic error, so it is not confused with a search that has no results.
 
 When deploying with Docker, the env file is gitignored, so create it (copy `.env.example` to `.env`) in the folder where the image is built. `COPY . .` brings it into the build stage and `vite build` inlines its values.
 

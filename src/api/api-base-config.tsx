@@ -31,8 +31,9 @@ const memoryCache = new Map<string, { expiresAt: number; data: unknown }>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
 
 // Retry policy for transient failures (5xx or network errors)
-const TRANSIENT_MAX_ATTEMPTS = 4;
-const TRANSIENT_RETRY_DELAY_MS = 500;
+const TRANSIENT_MAX_ATTEMPTS = 6;
+const TRANSIENT_RETRY_DELAY_MS = 400;
+const TRANSIENT_RETRY_MAX_DELAY_MS = 2000;
 
 const readCache = <T,>(key: string): T | undefined => {
   let entry = memoryCache.get(key);
@@ -171,14 +172,23 @@ class Api {
           if (!hasRetriesLeft) break;
           if (isTransient) {
             await new Promise((resolve) =>
-              setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS * 2 ** attempt)
+              setTimeout(
+                resolve,
+                Math.min(
+                  TRANSIENT_RETRY_DELAY_MS * 2 ** attempt,
+                  TRANSIENT_RETRY_MAX_DELAY_MS
+                )
+              )
             );
           }
         }
       }
+      const status = responseError?.response?.status;
       const message =
-        responseError?.response?.status === 429
+        status === 429
           ? "RATE_LIMITED"
+          : !status || status >= 500
+          ? "SERVICE_UNAVAILABLE"
           : responseError?.response?.data?.error?.message ||
             responseError?.response?.data?.message ||
             responseError?.message ||
@@ -263,3 +273,7 @@ export { axiosInstance };
 
 export const isRateLimited = (error: unknown): boolean =>
   Array.isArray(error) && error[0] === "RATE_LIMITED";
+
+// True when the API is down or overloaded (5xx or network error after retries)
+export const isServiceUnavailable = (error: unknown): boolean =>
+  Array.isArray(error) && error[0] === "SERVICE_UNAVAILABLE";

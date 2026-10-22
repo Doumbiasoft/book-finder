@@ -3,10 +3,22 @@ import type { BookVolume, SearchResponse } from "../types/types";
 import unitOfWork from "../api/unit-of-work";
 import { Book, Search } from "lucide-react";
 import BookGrid from "../components/BookGrid";
-import { isRateLimited } from "../api/api-base-config";
+import {
+  isRateLimited,
+  isServiceUnavailable,
+} from "../api/api-base-config";
 
 const RATE_LIMIT_MESSAGE =
   "⏳ The book service is busy right now. Please try again in a little while.";
+const SERVICE_UNAVAILABLE_MESSAGE =
+  "⚠️ Google Books is temporarily unavailable. Please try again in a moment.";
+
+const getServiceErrorMessage = (err: unknown): string | null =>
+  isRateLimited(err)
+    ? RATE_LIMIT_MESSAGE
+    : isServiceUnavailable(err)
+    ? SERVICE_UNAVAILABLE_MESSAGE
+    : null;
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState<string>("");
@@ -25,7 +37,8 @@ const SearchPage: React.FC = () => {
       setSoftwareBooks(response.items || []);
     } catch (err) {
       console.error("❌ Error fetching popular books:", err);
-      if (isRateLimited(err)) setError(RATE_LIMIT_MESSAGE);
+      const message = getServiceErrorMessage(err);
+      if (message) setError(message);
     } finally {
       setSoftwareBookLoading(false);
     }
@@ -48,9 +61,8 @@ const SearchPage: React.FC = () => {
       }
     } catch (err) {
       setError(
-        isRateLimited(err)
-          ? RATE_LIMIT_MESSAGE
-          : "❌ Error searching for books. Please try again."
+        getServiceErrorMessage(err) ??
+          "❌ Error searching for books. Please try again."
       );
       console.error(err);
     } finally {
