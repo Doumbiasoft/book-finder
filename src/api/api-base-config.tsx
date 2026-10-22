@@ -14,7 +14,11 @@ declare module "axios" {
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://www.googleapis.com/books/v1";
 
-const APP_MODE = import.meta.env.VITE_MODE || "development";
+const APP_MODE =
+  import.meta.env.VITE_MODE || (import.meta.env.DEV ? "development" : "production");
+
+// API timing logs are only printed in development
+const isDev = APP_MODE === "development";
 
 // Without a key, Google Books bills every request to a shared anonymous
 // project whose daily quota is almost always exhausted (HTTP 429).
@@ -72,16 +76,17 @@ axiosInstance.interceptors.request.use(
     req.metadata = {
       startTime: new Date().getTime(),
     };
-    const startTime = new Date().toLocaleString();
-    console.log(
-      `⏳ API Request is starting at ${startTime}. (based on local time)`
-    );
-    if (APP_MODE === "development")
+    if (isDev) {
+      const startTime = new Date().toLocaleString();
+      console.log(
+        `⏳ API Request is starting at ${startTime}. (based on local time)`
+      );
       console.log(
         `⏳ Method : ${req.method?.toUpperCase()} Request: ${
           req.baseURL + "/" + req.url
         }. (based on local time)`
       );
+    }
     return req;
   },
   (error) => {
@@ -91,7 +96,7 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (res) => {
-    if (res.config.metadata) {
+    if (isDev && res.config.metadata) {
       res.config.metadata.endTime = new Date().getTime();
       res.config.metadata.durationInMS =
         res.config.metadata.endTime - res.config.metadata.startTime;
@@ -103,7 +108,7 @@ axiosInstance.interceptors.response.use(
     return res;
   },
   (error) => {
-    if (error.config?.metadata) {
+    if (isDev && error.config?.metadata) {
       error.config.metadata.endTime = new Date().getTime();
       error.config.metadata.durationInMS =
         error.config.metadata.endTime - error.config.metadata.startTime;
